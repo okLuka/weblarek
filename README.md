@@ -98,3 +98,180 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+
+## Типы данных (types/index.ts)
+Дополнительно к стартовому набору
+// Товар
+export interface IProduct {
+  id: string;
+  title: string;
+  description: string;
+  image: string;  
+  category: string;
+  price: number | null; 
+}
+
+// Данные покупателя
+export interface IBuyer {
+  payment: string;  
+  address: string;
+  phone: string;
+  email: string;
+}
+
+// Объект, отправляемый на сервер при оформлении заказа (POST /order)
+export interface IOrderRequest {
+  payment: IBuyer['payment'];
+  email: IBuyer['email'];
+  phone: IBuyer['phone'];
+  address: IBuyer['address'];
+  total: number;
+  items: Array<IProduct['id']>; 
+}
+
+
+## Файлы с описанием классов (components)
+### Модель каталога — components/models/ProductCatalogModel.ts
+
+Назначение: хранение полного списка товаров и «выбранного» товара для детального просмотра.
+Поля:
+
+_items: IProduct[]
+
+_selected: IProduct | null
+
+# Методы:
+
+saveProducts(items: IProduct[]): void — сохраняет массив товаров.
+
+getProducts(): IProduct[] — возвращает копию массива.
+
+getProductById(id: string): IProduct | undefined — поиск по id.
+
+setSelectedProduct(product: IProduct | null): void — сохранить выбранный товар.
+
+getSelectedProduct(): IProduct | null — получить выбранный товар.
+
+# Модель корзины — components/models/CartModel.ts
+
+Назначение: хранение выбранных пользователем товаров.
+Поля:
+
+_items: IProduct[] — каждая позиция соответствует одному экземпляру в корзине.
+
+# Методы:
+
+getItems(): IProduct[] — вернуть копию массива позиций.
+
+addItem(product: IProduct): void — добавить позицию.
+
+removeItem(product: IProduct): void — удалить одну позицию с тем же id.
+
+clear(): void — очистить корзину.
+
+getTotal(): number — сумма по всем позициям (null трактуется как 0).
+
+getCount(): number — количество позиций.
+
+hasItem(id: string): boolean — проверить наличие товара по id.
+
+# Модель покупателя — components/models/BuyerModel.ts
+
+Назначение: хранение и валидация вводимых пользователем данных.
+Поля:
+
+_payment: string
+
+_address: string
+
+_phone: string
+
+_email: string
+
+# Методы:
+
+setData(partial: Partial<IBuyer>): void (и/или точечные сеттеры) — сохранить данные.
+
+getData(): IBuyer — получить все данные.
+
+clear(): void — очистить данные.
+
+validate(): IBuyerValidationResult — валидация полей (минимальные проверки).
+
+# Связь с сервером — components/models/LarekApi.ts
+
+Назначение: коммуникационный слой на базе Api (композиция).
+Конструктор: new LarekApi(api: IApi) — получает экземпляр HTTP-клиента.
+
+# Методы:
+
+getProducts(): Promise<IProduct[]> → GET /product/ — вернуть массив товаров (нормализует серверный ответ к IProduct[]).
+
+getProductById(id: string): Promise<IProduct> → GET /product/{id}.
+
+createOrder(payload: IOrderRequest): Promise<{ id: string; total: number }> → POST /order.
+
+Важно: в вызовы api.get/post передавать относительные URI (/product/, /order).
+
+Основной скрипт (main.ts)
+Создание экземпляров
+import { Api } from './Api';
+import { API_URL } from './constants';
+import { LarekApi } from './components/models/LarekApi';
+import { ProductCatalogModel } from './components/models/ProductCatalogModel';
+import { CartModel } from './components/models/CartModel';
+import { BuyerModel } from './components/models/BuyerModel';
+
+const http = new Api(API_URL);
+const server = new LarekApi(http);
+
+const catalog = new ProductCatalogModel();
+const cart = new CartModel();
+const buyer = new BuyerModel();
+
+# Тестирование методов моделей (через консоль)
+
+
+
+(async () => {
+  // 1) Загрузка каталога и сохранение в модель
+  const products = await server.getProducts();
+  catalog.saveProducts(products);
+
+  // 2) Каталог: получить массив, найти по id, выбрать товар
+  console.log('Каталог (из модели):', catalog.getProducts());
+  const firstId = products[0]?.id;
+  if (firstId) {
+    console.log('Товар по id:', catalog.getProductById(firstId));
+    catalog.setSelectedProduct(catalog.getProductById(firstId) ?? null);
+    console.log('Выбранный товар:', catalog.getSelectedProduct());
+  }
+
+  // 3) Корзина: добавить/проверить/удалить/очистить
+  if (products[0]) {
+    cart.addItem(products[0]);
+    console.log('Корзина после добавления:', cart.getItems());
+    console.log('Есть товар?', cart.hasItem(products[0].id));
+    console.log('Сумма/кол-во:', cart.getTotal(), cart.getCount());
+    cart.removeItem(products[0]);
+    console.log('Корзина после удаления:', cart.getItems());
+    cart.clear();
+    console.log('Корзина после очистки:', cart.getItems());
+  }
+
+  // 4) Покупатель: запись/чтение/валидация/очистка
+  buyer.setData({
+    payment: 'online',
+    address: 'Адрес',
+    phone: '79990000000',
+    email: 'user@example.com',
+  });
+  console.log('Данные покупателя:', buyer.getData());
+  console.log('Результат валидации:', buyer.validate());
+  buyer.clear();
+  console.log('После очистки:', buyer.getData());
+})();
+
+Запрос каталога и вывод массива
+
+server.getProducts() выполняет запрос к серверу, далее catalog.saveProducts(products) сохраняет массив в модель, а console.log(catalog.getProducts()) выводит его, используя методы класса.
