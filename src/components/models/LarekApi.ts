@@ -14,12 +14,6 @@ export class LarekApi {
     return data.items;
   }
 
-  // GET /product/{id} — получить товар по id
-  async getProductById(id: IProduct['id']): Promise<IProduct> {
-    const url = `${this.baseUrl.replace(/\/+$/, '')}/product/${id}`;
-    return this.api.get<IProduct>(`/product/${id}`);
-  }
-
   // POST /order — создать заказ
   async createOrder(payload: IOrderRequest): Promise<IOrderResponse> {
     const url = `${this.baseUrl.replace(/\/+$/, '')}/order`;

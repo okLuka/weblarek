@@ -43,31 +43,45 @@ export class BuyerModel {
     this._email = '';
   }
 
-  /**
-   * Валидация полей.
-   */
-  validate(): IBuyerValidationResult {
+  // Валидация payment и address должны быть заполнены
+  validateStep1(): IBuyerValidationResult {
     const errors: IBuyerValidationResult['errors'] = {};
 
-    if (!this._payment || this._payment.trim() === '') {
+    // только факт выбора и корректного значения
+    if (this._payment !== 'card' && this._payment !== 'cash') {
       errors.payment = 'Выберите способ оплаты';
     }
-
-    // Проверка email
-    if (!this._email || !/^\S+@\S+\.\S+$/.test(this._email)) {
-      errors.email = 'Некорректный email';
-    }
-
-    // Проверка телефона: >=10 цифр
-    const digits = (this._phone || '').replace(/\D/g, '');
-    if (digits.length < 10) {
-      errors.phone = 'Некорректный телефон';
-    }
-
-    if (!this._address || this._address.trim().length < 4) {
+    // только непустота адреса
+    if (!this._address || this._address.trim() === '') {
       errors.address = 'Укажите адрес';
     }
 
     return { valid: Object.keys(errors).length === 0, errors };
   }
+
+  // Валидация email и phone должны быть заполнены
+  validateStep2(): IBuyerValidationResult {
+    const errors: IBuyerValidationResult['errors'] = {};
+
+    // без regex — только непустота
+    if (!this._email || this._email.trim() === '') {
+      errors.email = 'Укажите email';
+    }
+    if (!this._phone || this._phone.trim() === '') {
+      errors.phone = 'Укажите телефон';
+    }
+
+    return { valid: Object.keys(errors).length === 0, errors };
+  }
+
+  // Общая валидация 
+  validate(): IBuyerValidationResult {
+    const s1 = this.validateStep1();
+    const s2 = this.validateStep2();
+    return {
+      valid: s1.valid && s2.valid,
+      errors: { ...s1.errors, ...s2.errors },
+    };
+  }
+
 }

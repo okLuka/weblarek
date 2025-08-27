@@ -9,7 +9,7 @@ export interface IApi {
 export type ProductId = string;
 
 // Вид оплаты.
-export type TPayment = string;
+export type TPayment = 'card' | 'cash';
 
 /** Товар */
 export interface IProduct {

@@ -213,32 +213,15 @@ createOrder(payload: IOrderRequest): Promise<{ id: string; total: number }> → 
 
 Важно: в вызовы api.get/post передавать относительные URI (/product/, /order).
 
-Основной скрипт (main.ts)
-Создание экземпляров
-import { Api } from './Api';
-import { API_URL } from './constants';
-import { LarekApi } from './components/models/LarekApi';
-import { ProductCatalogModel } from './components/models/ProductCatalogModel';
-import { CartModel } from './components/models/CartModel';
-import { BuyerModel } from './components/models/BuyerModel';
 
-const http = new Api(API_URL);
-const server = new LarekApi(http);
-
-const catalog = new ProductCatalogModel();
-const cart = new CartModel();
-const buyer = new BuyerModel();
 
 # Тестирование методов моделей (через консоль)
 
-
-
-(async () => {
-  // 1) Загрузка каталога и сохранение в модель
+## 1) Загрузка каталога и сохранение в модель
   const products = await server.getProducts();
   catalog.saveProducts(products);
 
-  // 2) Каталог: получить массив, найти по id, выбрать товар
+## 2) Каталог: получить массив, найти по id, выбрать товар
   console.log('Каталог (из модели):', catalog.getProducts());
   const firstId = products[0]?.id;
   if (firstId) {
@@ -247,7 +230,7 @@ const buyer = new BuyerModel();
     console.log('Выбранный товар:', catalog.getSelectedProduct());
   }
 
-  // 3) Корзина: добавить/проверить/удалить/очистить
+## 3) Корзина: добавить/проверить/удалить/очистить
   if (products[0]) {
     cart.addItem(products[0]);
     console.log('Корзина после добавления:', cart.getItems());
@@ -259,7 +242,7 @@ const buyer = new BuyerModel();
     console.log('Корзина после очистки:', cart.getItems());
   }
 
-  // 4) Покупатель: запись/чтение/валидация/очистка
+## 4) Покупатель: запись/чтение/валидация/очистка
   buyer.setData({
     payment: 'online',
     address: 'Адрес',
@@ -272,6 +255,6 @@ const buyer = new BuyerModel();
   console.log('После очистки:', buyer.getData());
 })();
 
-Запрос каталога и вывод массива
+# Запрос каталога и вывод массива
 
 server.getProducts() выполняет запрос к серверу, далее catalog.saveProducts(products) сохраняет массив в модель, а console.log(catalog.getProducts()) выводит его, используя методы класса.
