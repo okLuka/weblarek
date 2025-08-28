@@ -43,45 +43,27 @@ export class BuyerModel {
     this._email = '';
   }
 
-  // Валидация payment и address должны быть заполнены
-  validateStep1(): IBuyerValidationResult {
+  // Форма 1: оплата и адрес
+  validatePayment(): IBuyerValidationResult {
     const errors: IBuyerValidationResult['errors'] = {};
-
-    // только факт выбора и корректного значения
     if (this._payment !== 'card' && this._payment !== 'cash') {
       errors.payment = 'Выберите способ оплаты';
     }
-    // только непустота адреса
     if (!this._address || this._address.trim() === '') {
-      errors.address = 'Укажите адрес';
+      errors.address = 'Укажите адрес доставки';
     }
-
     return { valid: Object.keys(errors).length === 0, errors };
   }
 
-  // Валидация email и phone должны быть заполнены
-  validateStep2(): IBuyerValidationResult {
+  // Форма 2: email и телефон
+  validateUser(): IBuyerValidationResult {
     const errors: IBuyerValidationResult['errors'] = {};
-
-    // без regex — только непустота
     if (!this._email || this._email.trim() === '') {
       errors.email = 'Укажите email';
     }
     if (!this._phone || this._phone.trim() === '') {
       errors.phone = 'Укажите телефон';
     }
-
     return { valid: Object.keys(errors).length === 0, errors };
   }
-
-  // Общая валидация 
-  validate(): IBuyerValidationResult {
-    const s1 = this.validateStep1();
-    const s2 = this.validateStep2();
-    return {
-      valid: s1.valid && s2.valid,
-      errors: { ...s1.errors, ...s2.errors },
-    };
-  }
-
 }
