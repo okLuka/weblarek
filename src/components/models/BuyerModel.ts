@@ -43,27 +43,24 @@ export class BuyerModel {
     this._email = '';
   }
 
-  // Форма 1: оплата и адрес
-  validatePayment(): IBuyerValidationResult {
+  // валидация всех данных модели.
+  validate(): IBuyerValidationResult {
     const errors: IBuyerValidationResult['errors'] = {};
+
     if (this._payment !== 'card' && this._payment !== 'cash') {
       errors.payment = 'Выберите способ оплаты';
     }
     if (!this._address || this._address.trim() === '') {
       errors.address = 'Укажите адрес доставки';
     }
-    return { valid: Object.keys(errors).length === 0, errors };
-  }
-
-  // Форма 2: email и телефон
-  validateUser(): IBuyerValidationResult {
-    const errors: IBuyerValidationResult['errors'] = {};
     if (!this._email || this._email.trim() === '') {
       errors.email = 'Укажите email';
     }
     if (!this._phone || this._phone.trim() === '') {
       errors.phone = 'Укажите телефон';
     }
+
     return { valid: Object.keys(errors).length === 0, errors };
   }
+
 }
