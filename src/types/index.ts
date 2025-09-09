@@ -5,6 +5,21 @@ export interface IApi {
     post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
+import { Api } from '../components/base/Api';
+import { API_URL } from '../utils/constants';
+import { EventEmitter } from '../components/base/Events';
+import { ensureElement } from '../utils/utils';
+
+// Коммуникационный слой и модели
+import { LarekApi } from '../components/models/LarekApi';
+import { ProductCatalogModel } from '../components/models/ProductCatalogModel';
+import { CartModel } from '../components/models/CartModel';
+import { BuyerModel } from '../components/models/BuyerModel';
+
+// View-компоненты, необходимые на этом шаге
+import { CatalogGridView } from '../components/view/CatalogGridView';
+import { CatalogCardView } from '../components/view/CatalogCardView';
+
 // Уникальный идентификатор товара
 export type ProductId = string;
 
@@ -60,3 +75,4 @@ export interface IOrderResponse {
 export interface IErrorResponse {
   error: string;
 }
+

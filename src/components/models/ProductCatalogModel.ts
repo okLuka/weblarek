@@ -1,6 +1,8 @@
 import { IProduct, ProductId } from '../../types';
+import type { IEvents } from '../base/Events';
 
 export class ProductCatalogModel {
+  private events?: IEvents;
   // Массив всех товаров каталога 
   protected _items: IProduct[] = [];
 
@@ -12,9 +14,13 @@ export class ProductCatalogModel {
     if (items) this.saveProducts(items);
   }
 
+  attachEvents(events: IEvents): void { this.events = events; }
+  private emit(name: string, data?: unknown): void { this.events?.emit(name, data as object); }
+
   // Сохранить массив товаров (полная замена)
   saveProducts(items: IProduct[]): void {
     this._items = [...items];
+    this.emit('catalog:updated', { items: this.getProducts() });
   }
 
   // Получить все товары
@@ -35,5 +41,6 @@ export class ProductCatalogModel {
   // Получить выбранный товар
   getSelectedProduct(): IProduct | null {
     return this._selected ? { ...this._selected } : null;
+    this.emit('catalog:selected', { product: this.getSelectedProduct() });
   }
 }

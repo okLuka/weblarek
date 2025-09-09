@@ -1,15 +1,20 @@
 import { IBuyer, IBuyerValidationResult, TPayment } from '../../types';
+import type { IEvents } from '../base/Events';
 
 export class BuyerModel {
   protected _payment: TPayment = '' as TPayment;
   protected _address = '';
   protected _phone = '';
   protected _email = '';
+  private events?: IEvents;
 
   //  Начальные данные покупателя
   constructor(initial?: Partial<IBuyer>) {
     if (initial) this.setData(initial);
   }
+
+  attachEvents(events: IEvents): void { this.events = events; }
+  private emit(name: string, data?: unknown): void { this.events?.emit(name, data as object); }
 
   // Сохранить часть данных 
   setData(data: Partial<IBuyer>): void {
@@ -17,13 +22,14 @@ export class BuyerModel {
     if (data.address !== undefined) this._address = data.address;
     if (data.phone !== undefined) this._phone = data.phone;
     if (data.email !== undefined) this._email = data.email;
+    this.emit('buyer:updated', this.getData());
   }
 
   // Точечные сеттеры
-  setPayment(payment: TPayment): void { this._payment = payment; }
-  setAddress(address: string): void { this._address = address; }
-  setPhone(phone: string): void { this._phone = phone; }
-  setEmail(email: string): void { this._email = email; }
+  setPayment(v: TPayment): void { this._payment = v; this.emit('buyer:updated', this.getData()); }
+  setAddress(v: string): void { this._address = v; this.emit('buyer:updated', this.getData()); }
+  setPhone(v: string): void { this._phone = v; this.emit('buyer:updated', this.getData()); }
+  setEmail(v: string): void { this._email = v; this.emit('buyer:updated', this.getData()); }
 
   // Получить все данные покупателя
   getData(): IBuyer {
@@ -41,6 +47,7 @@ export class BuyerModel {
     this._address = '';
     this._phone = '';
     this._email = '';
+    this.emit('buyer:cleared', this.getData());
   }
 
   // валидация всех данных модели.

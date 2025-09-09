@@ -258,3 +258,207 @@ createOrder(payload: IOrderRequest): Promise<{ id: string; total: number }> → 
 # Запрос каталога и вывод массива
 
 server.getProducts() выполняет запрос к серверу, далее catalog.saveProducts(products) сохраняет массив в модель, а console.log(catalog.getProducts()) выводит его, используя методы класса.
+
+## Общие принципы
+
+Один класс View ↔ один блок разметки. Никакой бизнес-логики и доступа к моделям — только отрисовка и события UI.
+
+Все карточки имеют общего родителя (базовый класс карточки).
+
+Обе формы имеют общего родителя (базовый класс формы).
+
+Модальное окно — конечный контейнер (не наследуется). Контент модалки — самостоятельные компоненты.
+
+## Базовые классы (родители)
+# BaseCardView<T>
+
+Назначение: общий функционал карточек (клонирование <template>, заполнение заголовка, картинки, цены, навешивание обработчиков).
+
+Зависимости конструктора:
+new BaseCardView(template: HTMLTemplateElement, events: Events)
+
+## API:
+
+render(data: T): HTMLElement — отрисовка и возврат корня карточки.
+
+update(patch: Partial<T>): void — частичное обновление отображения.
+
+Защищённые утилиты: setText(el, text), setImage(img, src, alt), setPrice(el, price|null), on(el, type, handler).
+
+# BaseFormView<TValues, TErrors>
+
+Назначение: общий функционал форм (сбор/установка значений, показ ошибок, управление кнопкой submit).
+
+Зависимости:
+new BaseFormView(template: HTMLTemplateElement, events: Events)
+
+## API:
+
+render(values?: Partial<TValues>): HTMLElement
+
+setValues(values: Partial<TValues>): void
+
+getValues(): TValues
+
+setErrors(errors: Partial<TErrors>): void
+
+clearErrors(): void
+
+setSubmitDisabled(disabled: boolean): void
+
+События (эмитит):
+form:change (значения полей), form:submit (значения полей, preventDefault уже сделан).
+
+## ModalView
+
+Назначение: контейнер модального окна. Не наследуется.
+
+Опорные элементы: #modal-container, .modal__content, .modal__close. Контейнер уже есть в DOM. 
+
+# API:
+
+open(content: HTMLElement): void
+
+close(): void
+
+setContent(content: HTMLElement): void
+
+isOpen(): boolean
+
+События: modal:open, modal:close.
+
+## Компоненты карточек (3 шаблона → один родитель BaseCardView)
+# CatalogCardView extends BaseCardView<ProductCardVM>
+
+Шаблон: <template id="card-catalog"> (корень — button.gallery__item.card) с узлами: .card__category, .card__title, .card__image, .card__price. 
+
+Ответственность: рендер карточки в каталоге; по клику — открыть превью.
+
+События (эмитит):
+product:open { id: string }.
+
+# PreviewCardView extends BaseCardView<ProductPreviewVM>
+
+Шаблон: <template id="card-preview"> (крупная карточка для модалки) с .card__image, .card__category, .card__title, .card__text, .card__button («В корзину»), .card__price. 
+
+Ответственность: детальный просмотр товара; кнопка «В корзину» добавляет товар.
+
+События:
+product:add { id: string }.
+
+# BasketItemView extends BaseCardView<CartItemVM>
+
+Шаблон: <template id="card-basket"> (компактная карточка позиции корзины) с .basket__item-index, .card__title, .card__price, .basket__item-delete. 
+
+Ответственность: отображение позиции в корзине; удаление по кнопке.
+
+События:
+cart:remove { id: string }.
+
+## Контейнеры списков/секций
+# CatalogGridView
+
+Контейнер каталога: <main class="gallery"></main> — места для списка карточек каталога. 
+API:
+
+render(list: ProductCardVM[]): HTMLElement — полная перерисовка.
+
+mountCard(el: HTMLElement): void — вставка готовой карточки.
+
+# CartView
+
+Шаблон: <template id="basket"> — корень .basket, список .basket__list, кнопка «Оформить» .basket__button, сумма .basket__price. 
+
+Ответственность: отобразить список BasketItemView, общие итоги и кнопку «Оформить».
+
+API:
+
+render(data: CartSummaryVM): HTMLElement
+
+setDisabledCheckout(disabled: boolean): void
+
+Событие: checkout:open.
+
+# HeaderCartView
+
+Опорные элементы в шапке: .header__basket (кнопка), .header__basket-counter (счётчик). 
+
+index
+
+Ответственность: показать количество товаров, открыть модалку корзины по клику.
+
+API: update(count: number): void
+
+Событие: cart:open.
+
+# Формы (2 шаблона → один родитель BaseFormView)
+PaymentFormView extends BaseFormView<{ payment: TPayment; address: string }, { payment?: string; address?: string }>
+
+Шаблон: <template id="order"> — радиокнопки в виде кнопок (button[name="card"], button[name="cash"]), поле ввода адреса input[name="address"], кнопка сабмита .order__button, контейнер ошибок .form__errors. 
+
+
+
+Ответственность: выбор оплаты и адреса; управление активностью «Далее».
+
+Поведение:
+
+При выборе card/cash — выставляет payment и визуально активную кнопку.
+
+При вводе адреса — обновляет значения.
+
+Ошибки выводятся через setErrors({ payment?, address? }).
+
+Доступность сабмита — через setSubmitDisabled(boolean) (решает презентер на основе BuyerModel.validate()).
+
+События: наследует form:change, form:submit (payment:submit опционально алиасится на form:submit).
+
+# ContactsFormView extends BaseFormView<{ email: string; phone: string }, { email?: string; phone?: string }>
+
+Шаблон: <template id="contacts"> — поля input[name="email"], input[name="phone"], кнопка «Оплатить», блок для ошибок .form__errors. 
+Ответственность: ввод контактов; управление активностью «Оплатить».
+
+Поведение: аналогично PaymentFormView: значения/ошибки/активность управляются через публичный API базового класса, решения принимает презентер.
+
+События: form:change, form:submit.
+
+## Сообщения/сервисные компоненты
+# SuccessView
+
+Шаблон: <template id="success"> — .order-success__title, .order-success__description (сумма), .order-success__close. 
+Ответственность: показать итоги успешного заказа.
+
+# API:
+render({ id, total }: { id: string; total: number }): HTMLElement
+
+Событие: modal:close по кнопке закрытия.
+
+Поток событий (контракты View ↔ Presenter)
+
+HeaderCartView → cart:open
+
+CatalogCardView → product:open { id }
+
+PreviewCardView → product:add { id }
+
+BasketItemView → cart:remove { id }
+
+CartView → checkout:open
+
+PaymentFormView → form:change { payment, address }, form:submit
+
+ContactsFormView → form:change { email, phone }, form:submit
+
+ModalView → modal:open, modal:close
+
+## Соответствие вёрстке
+
+Секция каталога: .gallery — контейнер для списка карточек. 
+Шапка: .header__basket, .header__basket-counter — индикатор и кнопка корзины. 
+Модалка: #modal-container, .modal__content, .modal__close — контейнер, контент, кнопка закрытия. 
+
+Шаблоны:
+card-catalog, #card-preview, #card-basket — карточки. 
+basket — содержимое корзины. 
+order — форма оплаты и адреса. 
+contacts — форма email и телефона. 
+success — сообщение успеха. 
