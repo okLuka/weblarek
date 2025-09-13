@@ -5,15 +5,20 @@ export class CatalogGridView {
   private readonly root: HTMLElement;
   private readonly list: HTMLElement;
 
-
   constructor(root: HTMLElement, events: IEvents) {
     this.events = events;
     this.root = root; // .gallery
-    this.list = root; 
+    this.list = root;
   }
 
-  render(): HTMLElement { return this.root; }
-  clear(): void { this.list.innerHTML = ""; }
+  render(): HTMLElement {
+    return this.root;
+  }
+  clear(): void {
+    this.list.innerHTML = "";
+  }
 
-  mount(cardEl: HTMLElement): void { this.list.appendChild(cardEl); }
+  mount(cardEl: HTMLElement): void {
+    this.list.appendChild(cardEl);
+  }
 }

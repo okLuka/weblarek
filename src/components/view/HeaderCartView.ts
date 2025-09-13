@@ -10,14 +10,16 @@ export class HeaderCartView {
     this.btn = btn; // .header__basket
     this.counter = counter; // .header__basket-counter
 
-
     this.btn.addEventListener("click", (e) => {
       e.preventDefault();
       this.events.emit("cart:open", {});
     });
   }
 
-
-  render(): HTMLElement { return this.btn; }
-  updateCount(count: number): void { this.counter.textContent = String(count); }
+  render(): HTMLElement {
+    return this.btn;
+  }
+  updateCount(count: number): void {
+    this.counter.textContent = String(count);
+  }
 }
